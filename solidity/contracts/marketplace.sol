@@ -7,22 +7,24 @@ contract Marketplace {
     Coin public coin;
 
     struct Post {
-        address seller;
-        string id;
-        string title;
+        address freelancer;
+        address client;
     }
 
-    Post[] public posts;
+    mapping(string => Post) public postings;
+
+    event PostCreated(string ipfs_id, address client, address freelancer);
 
     constructor(address _coinAddress) {
         coin = Coin(_coinAddress);
     }
 
-    function createPost(string memory _id, string memory _title) public {
-        posts.push(Post(msg.sender, _id, _title));
+    function createPost(string memory ipfs_id, address client) public {
+        postings[ipfs_id] = Post(msg.sender, client);
+        emit PostCreated(ipfs_id, msg.sender, client);
     }
 
-    function getPosts() public view returns (Post[] memory) {
-        return posts;
+    function getPosts(string memory ipfs_id) public view returns (Post memory) {
+        return postings[ipfs_id];
     }
 }

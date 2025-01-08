@@ -29,55 +29,36 @@ describe("Marketplace Contract", function () {
   });
 
   describe("Creating Posts", function () {
-    it("Should allow users to create posts", async function () {
+    it("Should allow users to create posts with a client address", async function () {
       const postId = "post1";
-      const title = "First Post";
 
       // Create a post
-      await marketplace.connect(addr1).createPost(postId, title);
+      await marketplace.connect(addr1).createPost(postId, "0x0000000000000000000000000000000000000000");
+
+      // captures the event
+      const event = await marketplace.queryFilter(marketplace.filters.PostCreated());
+      expect(event.length).to.equal(1);
+      expect(event[0].args.client).to.equal(await addr1.getAddress());
+      expect(event[0].args.freelancer).to.equal("0x0000000000000000000000000000000000000000");
 
       // Verify post details
-      const posts = await marketplace.getPosts();
-      expect(posts.length).to.equal(1);
-      expect(posts[0].seller).to.equal(await addr1.getAddress());
-      expect(posts[0].id).to.equal(postId);
-      expect(posts[0].title).to.equal(title);
+      const post = await marketplace.getPosts(postId);
+      expect(post.freelancer).to.equal(await addr1.getAddress());
+      expect(post.client).to.equal("0x0000000000000000000000000000000000000000");
     });
 
     it("Should store multiple posts", async function () {
-      await marketplace.connect(addr1).createPost("post1", "First Post");
-      await marketplace.connect(addr2).createPost("post2", "Second Post");
+      await marketplace.connect(addr1).createPost("post1", "0x0000000000000000000000000000000000000000");
+      await marketplace.connect(addr2).createPost("post2", "0x1111111111111111111111111111111111111111");
 
-      const posts = await marketplace.getPosts();
-      expect(posts.length).to.equal(2);
+      const post1 = await marketplace.getPosts("post1");
+      const post2 = await marketplace.getPosts("post2");
+      expect(post1.freelancer).to.equal(await addr1.getAddress());
+      expect(post1.client).to.equal("0x0000000000000000000000000000000000000000");
+      expect(post2.freelancer).to.equal(await addr2.getAddress());
+      expect(post2.client).to.equal("0x1111111111111111111111111111111111111111");
 
-      // Verify first post
-      expect(posts[0].seller).to.equal(await addr1.getAddress());
-      expect(posts[0].id).to.equal("post1");
-      expect(posts[0].title).to.equal("First Post");
-
-      // Verify second post
-      expect(posts[1].seller).to.equal(await addr2.getAddress());
-      expect(posts[1].id).to.equal("post2");
-      expect(posts[1].title).to.equal("Second Post");
     });
   });
 
-//   describe("Retrieving Posts", function () {
-//     it("Should return all posts", async function () {
-//       await marketplace.connect(addr1).createPost("post1", "First Post");
-//       await marketplace.connect(addr2).createPost("post2", "Second Post");
-
-//       const posts = await marketplace.getPosts();
-
-//       expect(posts.length).to.equal(2);
-//       expect(posts[0].seller).to.equal(await addr1.getAddress());
-//       expect(posts[1].seller).to.equal(await addr2.getAddress());
-//     });
-
-//     it("Should return an empty array if no posts exist", async function () {
-//       const posts = await marketplace.getPosts();
-//       expect(posts.length).to.equal(0);
-//     });
-//   });
 });
