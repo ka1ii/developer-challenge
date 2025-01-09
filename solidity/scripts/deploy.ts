@@ -7,13 +7,13 @@ async function main() {
   const coin = await Coin.deploy(initialSupply);
   await coin.deployed();
 
-  const Marketplace = await ethers.getContractFactory("Marketplace");
-  const marketplace = await Marketplace.deploy(coin.address);
-  await marketplace.deployed();
+  const Escrow = await ethers.getContractFactory("Escrow");
+  const escrow = await Escrow.deploy(coin.address);
+  await escrow.deployed();
 
   console.log("Contracts deployed!\nAdd the addresses to backend/index.ts:");
   console.log(`COIN_ADDRESS: ${coin.address}`);
-  console.log(`MARKETPLACE_ADDRESS: ${marketplace.address}`);
+  console.log(`ESCROW_ADDRESS: ${escrow.address}`);
 }
 
 main()
