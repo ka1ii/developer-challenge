@@ -38,8 +38,6 @@ describe("Escrow Contract", function () {
     // By default, the "owner" might hold all minted tokens, so let's transfer some to the client
     const transferAmount = ethers.utils.parseEther("200");
     await coin.connect(owner).transfer(client.address, transferAmount);
-
-    // Optionally, distribute tokens to others as needed
   });
 
   describe("Deployment", function () {
