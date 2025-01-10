@@ -37,12 +37,15 @@ app.use((req: any, res, next) => {
   switch (username) {
     case 'admin':
       req.firefly = firefly_admin;
+      req.address = config.HOST1_ADMIN_ADDRESS;
       break;
     case 'freelancer':
       req.firefly = firefly_freelancer;
+      req.address = config.HOST2_FREELANCER_ADDRESS;
       break;
     case 'client':
       req.firefly = firefly_client;
+      req.address = config.HOST3_CLIENT_ADDRESS;
       break;
     default:
       return res.status(400).send({ error: 'Invalid username' });
@@ -118,7 +121,7 @@ app.get("/api/v1/wallet/balance", async (req : any, res) => {
 app.post("/api/v1/wallet/transfer", async (req : any, res) => {
   const firefly = req.firefly;
   try {
-    const fireflyRes = await firefly.invokeContractAPI(coinApiName, "transfer", {
+    await firefly.invokeContractAPI(coinApiName, "transfer", {
       input: {
         to: req.body.address,
         amount: req.body.amount,
@@ -136,15 +139,16 @@ app.post("/api/v1/contracts", async (req : any, res) => {
   const firefly = req.firefly;
   const cid = uuidv4();
   try {
-    // authorize the escrow contract to spend the client's funds
+    // authorize the escrow contract to spend the client's funds, with new allowance
     await firefly.invokeContractAPI(coinApiName, "approve", {
       input: {
         spender: config.ESCROW_ADDRESS,
-        amount: req.body.amount,
+        // infinite allowance for now
+        amount: 2147483647,
       }
     });
 
-    await firefly.invokeContractAPI(escrowApiName, "createAgreement", {
+    const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "createAgreement", {
       input: {
         _freelancer: req.body.freelancer,
         _amount: req.body.amount,
@@ -179,6 +183,7 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
 
 app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
   const firefly = req.firefly;
+  // console.log(req)
   try {
     const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "approve", {
       input: {
@@ -187,6 +192,7 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
+    // console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -195,6 +201,7 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
 
 app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
   const firefly = req.firefly;
+  // console.log(req)
   try {
     await firefly.invokeContractAPI(escrowApiName, "releaseFunds", {
       input: {
@@ -204,6 +211,7 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
+    // console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -213,13 +221,23 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
 app.post("/api/v1/contracts/:cid/addFunds", async (req: any, res) => {
   const firefly = req.firefly;
   try {
-    // authorize the escrow contract to spend the client's funds
+    // Retrieve the current allowance
+    const currentAllowance = await firefly.queryContractAPI(coinApiName, "allowance", {
+      input: {
+        owner: req.address,
+        spender: config.ESCROW_ADDRESS,
+      }
+    });
+    // Calculate the new allowance
+    const newAllowance = Number(currentAllowance) + Number(req.body.amount);
+    // authorize the escrow contract to spend the client's funds, with new allowance
     await firefly.invokeContractAPI(coinApiName, "approve", {
       input: {
         spender: config.ESCROW_ADDRESS,
-        amount: req.body.amount,
+        amount: newAllowance,
       }
     });
+
     await firefly.invokeContractAPI(escrowApiName, "addFunds", {
       input: {
         _cid: req.params.cid,
