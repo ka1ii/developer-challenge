@@ -8,8 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 export const app = express();
 
 // firefly instance that deployed the token and escrow contract
-const firefly_other = new FireFly({
-  host: config.HOST1_OTHER,
+const firefly_admin = new FireFly({
+  host: config.HOST1_ADMIN,
   namespace: config.NAMESPACE,
 });
 // firefly instance that represents the freelancer
@@ -35,8 +35,8 @@ app.use((req: any, res, next) => {
   const username = req.headers['username'];
 
   switch (username) {
-    case 'other':
-      req.firefly = firefly_other;
+    case 'admin':
+      req.firefly = firefly_admin;
       break;
     case 'freelancer':
       req.firefly = firefly_freelancer;
@@ -79,7 +79,6 @@ app.use((req: any, res, next) => {
 // });
 
 app.post("/api/v1/wallet/mint", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     const fireflyRes = await firefly.invokeContractAPI(
@@ -91,11 +90,9 @@ app.post("/api/v1/wallet/mint", async (req : any, res) => {
         }
       }
     );
-    console.log(fireflyRes);
     res.status(202).send();
     /* eslint-disable  @typescript-eslint/no-explicit-any */
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -103,18 +100,15 @@ app.post("/api/v1/wallet/mint", async (req : any, res) => {
 });
 
 app.get("/api/v1/wallet/balance", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     const fireflyRes = await firefly.queryContractAPI(coinApiName, "myBalance", {
 
     });
-    console.log(fireflyRes);
     res.status(202).send({
       balance: fireflyRes.output,
     });
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -122,7 +116,6 @@ app.get("/api/v1/wallet/balance", async (req : any, res) => {
 });
 
 app.post("/api/v1/wallet/transfer", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     const fireflyRes = await firefly.invokeContractAPI(coinApiName, "transfer", {
@@ -131,10 +124,8 @@ app.post("/api/v1/wallet/transfer", async (req : any, res) => {
         amount: req.body.amount,
       },
     });
-    console.log(fireflyRes);
     res.status(202).send();
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -142,7 +133,6 @@ app.post("/api/v1/wallet/transfer", async (req : any, res) => {
 });
 
 app.post("/api/v1/contracts", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   const cid = uuidv4();
   try {
@@ -165,7 +155,6 @@ app.post("/api/v1/contracts", async (req : any, res) => {
       cid: cid,
     });
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -173,7 +162,6 @@ app.post("/api/v1/contracts", async (req : any, res) => {
 });
 
 app.get("/api/v1/contracts/:cid", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     const fireflyRes = await firefly.queryContractAPI(escrowApiName, "getAgreement", {
@@ -183,7 +171,6 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
     });
     res.status(202).send(fireflyRes);
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -191,7 +178,6 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
 });
 
 app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "approve", {
@@ -201,7 +187,6 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -209,7 +194,6 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
 });
 
 app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     await firefly.invokeContractAPI(escrowApiName, "releaseFunds", {
@@ -220,7 +204,6 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -228,7 +211,6 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
 });
 
 app.post("/api/v1/contracts/:cid/addFunds", async (req: any, res) => {
-  console.log(req.body);
   const firefly = req.firefly;
   try {
     // authorize the escrow contract to spend the client's funds
@@ -246,7 +228,6 @@ app.post("/api/v1/contracts/:cid/addFunds", async (req: any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -264,7 +245,6 @@ app.get("/api/v1/wallet/decimals", async (req: any, res) => {
       decimals: fireflyRes.output,
     });
   } catch (e: any) {
-    console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -273,7 +253,7 @@ app.get("/api/v1/wallet/decimals", async (req: any, res) => {
 
 async function init() {
 
-  await firefly_other
+  await firefly_admin
     .generateContractInterface({
       name: escrowFfiName,
       namespace: config.NAMESPACE,
@@ -285,13 +265,13 @@ async function init() {
     })
     .then(async (escrowGeneratedFFI) => {
       if (!escrowGeneratedFFI) return;
-      return await firefly_other.createContractInterface(escrowGeneratedFFI, {
+      return await firefly_admin.createContractInterface(escrowGeneratedFFI, {
         confirm: true,
       });
     })
     .then(async (escrowContractInterface) => {
       if (!escrowContractInterface) return;
-      return await firefly_other.createContractAPI(
+      return await firefly_admin.createContractAPI(
         {
           interface: {
             id: escrowContractInterface.id,
@@ -315,7 +295,7 @@ async function init() {
     });
 
   // Token
-  await firefly_other
+  await firefly_admin
     .generateContractInterface({
       name: coinFfiName,
       namespace: config.NAMESPACE,
@@ -327,13 +307,13 @@ async function init() {
     })
     .then(async (coinGeneratedFFI) => {
       if (!coinGeneratedFFI) return;
-      return await firefly_other.createContractInterface(coinGeneratedFFI, {
+      return await firefly_admin.createContractInterface(coinGeneratedFFI, {
         confirm: true,
       });
     })
     .then(async (coinContractInterface) => {
       if (!coinContractInterface) return;
-      return await firefly_other.createContractAPI(
+      return await firefly_admin.createContractAPI(
         {
           interface: {
             id: coinContractInterface.id,

@@ -34,7 +34,7 @@ export function LoginForm({
             </a>
             <h1 className="text-xl font-bold">Welcome to Freelance Marketplace</h1>
             <div className="text-center text-sm">
-              Continue as client | freelancer | other
+              Continue as client | freelancer | admin
             </div>
           </div>
           <div className="flex flex-col gap-6">
@@ -43,7 +43,7 @@ export function LoginForm({
               <Input
                 id="username"
                 type="text"
-                placeholder="client | freelancer | other"
+                placeholder="client | freelancer | admin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)} // Update state on input change
                 required
