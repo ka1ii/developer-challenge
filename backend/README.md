@@ -4,7 +4,20 @@ A very simple TypeScript Node.js app that uses the FireFly SDK to interact with 
 
 ## Configuration
 
-You are provided a basic [config.json](./config.json) file to help with setting up your app. The provided values will guide you to get the existing app up and running. Feel free to change this however you need for you application.
+To deploy the backend, make sure there are three firefly supernodes running and solidity contracts are deployed on the created chain.
+Once deployed, populate these values in your config.json
+
+"COIN_ADDRESS": ,
+"ESCROW_ADDRESS": ,
+"HOST1_ADMIN": ,
+"HOST1_ADMIN_ADDRESS": ,
+"HOST2_FREELANCER": ,
+"HOST2_FREELANCER_ADDRESS":,
+"HOST3_CLIENT": ,
+"HOST3_CLIENT_ADDRESS": ,
+"NAMESPACE": "default",
+"VERSION": "0.0.0",
+"PORT": 8000
 
 ## Run
 
