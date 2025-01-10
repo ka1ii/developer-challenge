@@ -102,7 +102,7 @@ describe("Escrow Contract", function () {
       // 4) The client can't release funds because the freelancer hasn't approved the escrow contract
       await expect(
         escrow.connect(client).releaseFunds(cid, amount)
-      ).to.be.revertedWith("Freelancer must approve the escrow contract first");
+      ).to.be.revertedWith("Contract not handshaked");
     });
   });
 
@@ -132,7 +132,7 @@ describe("Escrow Contract", function () {
       await coin.connect(otherUser).approve(escrow.address, additionalAmount);
       await expect(
         escrow.connect(otherUser).addFunds(cid, additionalAmount)
-      ).to.be.revertedWith("Only client can add funds");
+      ).to.be.revertedWith("No permission to add funds");
     });
   });
 
@@ -184,14 +184,14 @@ describe("Escrow Contract", function () {
 
       await expect(
         escrow.connect(otherUser).releaseFunds(cid, ethers.utils.parseEther("10"))
-      ).to.be.revertedWith("Only client can release funds");
+      ).to.be.revertedWith("No permission to release funds");
     });
 
     it("Should revert if trying to release more than escrowed", async function () {
       
       // Freelancer must approve the escrow contract first
       await escrow.connect(freelancer).approve(cid);
-      
+
       // Attempt to release 60, but only 50 is in escrow
       await expect(
         escrow.connect(client).releaseFunds(cid, ethers.utils.parseEther("60"))

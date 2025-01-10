@@ -82,7 +82,7 @@ contract Escrow is ReentrancyGuard {
      */
     function addFunds(string calldata _cid, uint256 _amount) external {
         Agreement storage ag = agreements[_cid];
-        require(msg.sender == ag.client, "Only client can add funds");
+        require(msg.sender == ag.client, "No permission to add funds");
         require(
             token.transferFrom(msg.sender, address(this), _amount),
             "Token transfer failed"
@@ -105,11 +105,8 @@ contract Escrow is ReentrancyGuard {
         Agreement storage ag = agreements[_cid];
 
         // Ensure caller is the client
-        require(
-            ag.handshake,
-            "Freelancer must approve the escrow contract first"
-        );
-        require(msg.sender == ag.client, "Only client can release funds");
+        require(ag.handshake, "Contract not handshaked");
+        require(msg.sender == ag.client, "No permission to release funds");
         require(
             _amount <= ag.amount,
             "Amount to release exceeds total escrowed amount"
@@ -133,7 +130,7 @@ contract Escrow is ReentrancyGuard {
      */
     function approve(string calldata _cid) external {
         Agreement storage ag = agreements[_cid];
-        require(msg.sender == ag.freelancer, "Only freelancer can approve");
+        require(msg.sender == ag.freelancer, "No permission to approve");
         ag.handshake = true;
         emit Handshake(_cid);
     }

@@ -3,8 +3,7 @@ import { ethers } from "hardhat";
 async function main() {
 
   const Coin = await ethers.getContractFactory("Coin");
-  const initialSupply = ethers.utils.parseEther("1000");
-  const coin = await Coin.deploy(initialSupply);
+  const coin = await Coin.deploy(1000);
   await coin.deployed();
 
   const Escrow = await ethers.getContractFactory("Escrow");

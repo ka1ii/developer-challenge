@@ -4,8 +4,9 @@ import express from "express";
 import escrow from "../../solidity/artifacts/contracts/escrow.sol/Escrow.json";
 import coin from "../../solidity/artifacts/contracts/coin.sol/Coin.json";
 import config from "../config.json";
+import { v4 as uuidv4 } from 'uuid';
+export const app = express();
 
-const app = express();
 // firefly instance that deployed the token and escrow contract
 const firefly_other = new FireFly({
   host: config.HOST1_OTHER,
@@ -30,7 +31,7 @@ const coinApiName: string = `coinApi-${config.VERSION}`;
 app.use(bodyparser.json());
 
 // Middleware to attach FireFly instance based on username
-app.use((req, res, next) => {
+app.use((req: any, res, next) => {
   const username = req.headers['username'];
 
   switch (username) {
@@ -77,88 +78,201 @@ app.use((req, res, next) => {
 //   }
 // });
 
-// app.post("/api/v1/mintCoin", async (req, res) => {
-//   console.log(req.body);
-//   try {
-//     const fireflyRes = await firefly.invokeContractAPI(
-//       coinApiName,
-//       "mint",
-//       {
-//         input: {
-//           amount: Number(req.body.amount),
-//         }
-//       }
-//     );
-//     console.log(fireflyRes);
-//     res.status(202).send({
-//       amount: fireflyRes.input.input.amount,
-//     });
-//     /* eslint-disable  @typescript-eslint/no-explicit-any */
-//   } catch (e: any) {
-//     console.log(e);
-//     res.status(500).send({
-//       error: e.message,
-//     });
-//   }
-// });
+app.post("/api/v1/wallet/mint", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.invokeContractAPI(
+      coinApiName,
+      "mint",
+      {
+        input: {
+          amount: Number(req.body.amount),
+        }
+      }
+    );
+    console.log(fireflyRes);
+    res.status(202).send();
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
 
-// app.post("/api/v1/getBalance", async (req, res) => {
-//   console.log(req.body);
-//   try {
-//     const fireflyRes = await firefly.queryContractAPI(coinApiName, "balanceOf", {
-//       input: {
-//         account: req.body.account,
-//       },
-//     });
-//     console.log(fireflyRes);
-//     res.status(202).send(fireflyRes);
-//   } catch (e: any) {
-//     console.log(e);
-//     res.status(500).send({
-//       error: e.message,
-//     });
-//   }
-// });
+app.get("/api/v1/wallet/balance", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.queryContractAPI(coinApiName, "myBalance", {
 
-// app.post("/api/v1/jobs", async (req, res) => {
-//   console.log(req.body);
-//   try {
-//     const fireflyRes = await firefly.invokeContractAPI(marketplaceApiName, "createPost", {
-//       input: {
-//         ipfs_id: req.body.ipfs_id,
-//         freelancer: req.body.freelancer,
-//       },
-//     });
-//     console.log(fireflyRes);
-//     res.status(202).send();
-//   } catch (e: any) {
-//     console.log(e);
-//     res.status(500).send({
-//       error: e.message,
-//     });
-//   }
-// });
+    });
+    console.log(fireflyRes);
+    res.status(202).send({
+      balance: fireflyRes.output,
+    });
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
 
-// app.get("/api/v1/jobs/:ipfs_id", async (req, res) => {
-//   console.log(req.params);
-//   try {
-//     const fireflyRes = await firefly.queryContractAPI(marketplaceApiName, "getPost", {
-//       input: {
-//         ipfs_id: req.params.ipfs_id,
-//       },
-//     });
-//     console.log(fireflyRes);
-//     res.status(202).send(fireflyRes);
-//   } catch (e: any) {
-//     console.log(e);
-//     res.status(500).send({
-//       error: e.message,
-//     });
-//   }
-// });
+app.post("/api/v1/wallet/transfer", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.invokeContractAPI(coinApiName, "transfer", {
+      input: {
+        to: req.body.address,
+        amount: req.body.amount,
+      },
+    });
+    console.log(fireflyRes);
+    res.status(202).send();
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.post("/api/v1/contracts", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  const cid = uuidv4();
+  try {
+    // authorize the escrow contract to spend the client's funds
+    await firefly.invokeContractAPI(coinApiName, "approve", {
+      input: {
+        spender: config.ESCROW_ADDRESS,
+        amount: req.body.amount,
+      }
+    });
+
+    await firefly.invokeContractAPI(escrowApiName, "createAgreement", {
+      input: {
+        _freelancer: req.body.freelancer,
+        _amount: req.body.amount,
+        _cid: cid,
+      },
+    });
+    res.status(202).send({
+      cid: cid,
+    });
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.get("/api/v1/contracts/:cid", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.queryContractAPI(escrowApiName, "getAgreement", {
+      input: {
+        _cid: req.params.cid,
+      },
+    });
+    res.status(202).send(fireflyRes);
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "approve", {
+      input: {
+        _cid: req.params.cid,
+      },
+    });
+    res.status(202).send();
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    await firefly.invokeContractAPI(escrowApiName, "releaseFunds", {
+      input: {
+        _cid: req.params.cid,
+        _amount: req.body.amount,
+      },
+    });
+    res.status(202).send();
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+app.post("/api/v1/contracts/:cid/addFunds", async (req: any, res) => {
+  console.log(req.body);
+  const firefly = req.firefly;
+  try {
+    // authorize the escrow contract to spend the client's funds
+    await firefly.invokeContractAPI(coinApiName, "approve", {
+      input: {
+        spender: config.ESCROW_ADDRESS,
+        amount: req.body.amount,
+      }
+    });
+    await firefly.invokeContractAPI(escrowApiName, "addFunds", {
+      input: {
+        _cid: req.params.cid,
+        _amount: req.body.amount,
+      },
+    });
+    res.status(202).send();
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
+
+
+app.get("/api/v1/wallet/decimals", async (req: any, res) => {
+  const firefly = req.firefly;
+  try {
+    const fireflyRes = await firefly.queryContractAPI(coinApiName, "decimals", {
+
+    });
+    res.status(202).send({
+      decimals: fireflyRes.output,
+    });
+  } catch (e: any) {
+    console.log(e);
+    res.status(500).send({
+      error: e.message,
+    });
+  }
+});
 
 async function init() {
-  // Simple storage
+
   await firefly_other
     .generateContractInterface({
       name: escrowFfiName,
@@ -220,6 +334,172 @@ async function init() {
     .then(async (coinContractInterface) => {
       if (!coinContractInterface) return;
       return await firefly_other.createContractAPI(
+        {
+          interface: {
+            id: coinContractInterface.id,
+          },
+          location: {
+            address: config.COIN_ADDRESS,
+          },
+          name: coinApiName,
+        },
+        { confirm: true }
+      );
+    })
+    .catch((e) => {
+      const err = JSON.parse(JSON.stringify(e.originalError));
+
+      if (err.status === 409) {
+        console.log("'coinFFI' already exists in FireFly. Ignoring.");
+      } else {
+        return;
+      }
+    });
+  
+  await firefly_client
+    .generateContractInterface({
+      name: escrowFfiName,
+      namespace: config.NAMESPACE,
+      version: "1.0",
+      description: "Deployed escrow contract",
+      input: {
+        abi: escrow.abi,
+      },
+    })
+    .then(async (escrowGeneratedFFI) => {
+      if (!escrowGeneratedFFI) return;
+      return await firefly_client.createContractInterface(escrowGeneratedFFI, {
+        confirm: true,
+      });
+    })
+    .then(async (escrowContractInterface) => {
+      if (!escrowContractInterface) return;
+      return await firefly_client.createContractAPI(
+        {
+          interface: {
+            id: escrowContractInterface.id,
+          },
+          location: {
+            address: config.ESCROW_ADDRESS,
+          },
+          name: escrowApiName,
+        },
+        { confirm: true }
+      );
+    })
+    .catch((e) => {
+      const err = JSON.parse(JSON.stringify(e.originalError));
+
+      if (err.status === 409) {
+        console.log("'escrowFFI' already exists in FireFly. Ignoring.");
+      } else {
+        return;
+      }
+    });
+
+  // Token
+  await firefly_client
+    .generateContractInterface({
+      name: coinFfiName,
+      namespace: config.NAMESPACE,
+      version: "1.0",
+      description: "Deployed coin contract",
+      input: {
+        abi: coin.abi,
+      },
+    })
+    .then(async (coinGeneratedFFI) => {
+      if (!coinGeneratedFFI) return;
+      return await firefly_client.createContractInterface(coinGeneratedFFI, {
+        confirm: true,
+      });
+    })
+    .then(async (coinContractInterface) => {
+      if (!coinContractInterface) return;
+      return await firefly_client.createContractAPI(
+        {
+          interface: {
+            id: coinContractInterface.id,
+          },
+          location: {
+            address: config.COIN_ADDRESS,
+          },
+          name: coinApiName,
+        },
+        { confirm: true }
+      );
+    })
+    .catch((e) => {
+      const err = JSON.parse(JSON.stringify(e.originalError));
+
+      if (err.status === 409) {
+        console.log("'coinFFI' already exists in FireFly. Ignoring.");
+      } else {
+        return;
+      }
+    });
+  
+  await firefly_freelancer
+    .generateContractInterface({
+      name: escrowFfiName,
+      namespace: config.NAMESPACE,
+      version: "1.0",
+      description: "Deployed escrow contract",
+      input: {
+        abi: escrow.abi,
+      },
+    })
+    .then(async (escrowGeneratedFFI) => {
+      if (!escrowGeneratedFFI) return;
+      return await firefly_freelancer.createContractInterface(escrowGeneratedFFI, {
+        confirm: true,
+      });
+    })
+    .then(async (escrowContractInterface) => {
+      if (!escrowContractInterface) return;
+      return await firefly_freelancer.createContractAPI(
+        {
+          interface: {
+            id: escrowContractInterface.id,
+          },
+          location: {
+            address: config.ESCROW_ADDRESS,
+          },
+          name: escrowApiName,
+        },
+        { confirm: true }
+      );
+    })
+    .catch((e) => {
+      const err = JSON.parse(JSON.stringify(e.originalError));
+
+      if (err.status === 409) {
+        console.log("'escrowFFI' already exists in FireFly. Ignoring.");
+      } else {
+        return;
+      }
+    });
+
+  // Token
+  await firefly_freelancer
+    .generateContractInterface({
+      name: coinFfiName,
+      namespace: config.NAMESPACE,
+      version: "1.0",
+      description: "Deployed coin contract",
+      input: {
+        abi: coin.abi,
+      },
+    })
+    .then(async (coinGeneratedFFI) => {
+      if (!coinGeneratedFFI) return;
+      return await firefly_freelancer.createContractInterface(coinGeneratedFFI, {
+        confirm: true,
+      });
+    })
+    .then(async (coinContractInterface) => {
+      if (!coinContractInterface) return;
+      return await firefly_freelancer.createContractAPI(
         {
           interface: {
             id: coinContractInterface.id,
