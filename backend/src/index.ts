@@ -5,6 +5,8 @@ import escrow from "../../solidity/artifacts/contracts/escrow.sol/Escrow.json";
 import coin from "../../solidity/artifacts/contracts/coin.sol/Coin.json";
 import config from "../config.json";
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+
 export const app = express();
 
 // firefly instance that deployed the token and escrow contract
@@ -28,7 +30,32 @@ const escrowApiName: string = `escrowApi-${config.VERSION}`;
 const coinFfiName: string = `coinFFI-${config.VERSION}`;
 const coinApiName: string = `coinApi-${config.VERSION}`;
 
+// Proposal
+type Proposal = {
+  id: string;
+  freelancer: string;
+  coverletter: string;
+  amount: number;
+}
+
+// Job post 
+type JobPost = {
+  id: string;
+  title: string;
+  description: string;
+  budget: number;
+  owner: string;
+  proposal: Proposal[];
+}
+
+// mock job post database using a map data structure 
+const jobPostDatabase = new Map<string, JobPost>();
+
 app.use(bodyparser.json());
+
+// mock ipfs database for contracts using a map data structure
+// the key is a hash of the contract data
+const contractDatabase = new Map<string, string>();
 
 // Middleware to attach FireFly instance based on username
 app.use((req: any, res, next) => {
@@ -54,32 +81,61 @@ app.use((req: any, res, next) => {
   next();
 });
 
-// app.get("/api/value", async (req, res) => {
-//   res.send(
-//     await firefly.queryContractAPI(ssApiName, "get", {
-//       key: config.SIGNING_KEY,
-//     })
-//   );
-// });
+app.get("/api/v1/jobs", async (req: any, res) => {
+  const username = req.headers['username'];
+  const jobs = Array.from(jobPostDatabase.values()).map(job => {
+    if (job.owner === username) {
+      return job; // Include proposals for the owner
+    } else {
+      // Exclude proposals for others
+      const { proposal, ...jobWithoutProposals } = job;
+      return jobWithoutProposals;
+    }
+  });
+  res.status(202).send(jobs);
+});
 
-// app.post("/api/value", async (req, res) => {
-//   try {
-//     const fireflyRes = await firefly.invokeContractAPI(ssApiName, "set", {
-//       input: {
-//         x: req.body.x,
-//       },
-//       key: config.SIGNING_KEY,
-//     });
-//     res.status(202).send({
-//       id: fireflyRes.id,
-//     });
-//     /* eslint-disable  @typescript-eslint/no-explicit-any */
-//   } catch (e: any) {
-//     res.status(500).send({
-//       error: e.message,
-//     });
-//   }
-// });
+app.post("/api/v1/jobs", async (req: any, res) => {
+  const username = req.headers['username'];
+  const jobPost: JobPost = {
+    id: uuidv4(),
+    title: req.body.title,
+    description: req.body.description,
+    budget: req.body.budget,
+    owner: username,
+    proposal: [],
+  }
+  jobPostDatabase.set(jobPost.id, jobPost);
+  res.status(202).send(jobPost);
+});
+
+app.get("/api/v1/jobs/:id", async (req: any, res) => {
+  const jobPost = jobPostDatabase.get(req.params.id);
+  if (!jobPost) {
+    return res.status(404).send({ error: 'Job post not found' });
+  }
+  if (jobPost.owner !== req.headers['username']) {
+    const { proposal, ...jobWithoutProposals } = jobPost;
+    return res.status(202).send(jobWithoutProposals);
+  }
+  res.status(202).send(jobPost);
+});
+
+app.post("/api/v1/jobs/:id/proposals", async (req: any, res) => {
+  const username = req.headers['username'];
+  const jobPost = jobPostDatabase.get(req.params.id);
+  if (!jobPost) {
+    return res.status(404).send({ error: 'Job post not found' });
+  }
+  const proposal: Proposal = {
+    id: uuidv4(),
+    freelancer: username,
+    coverletter: req.body.coverletter,
+    amount: req.body.amount,
+  }
+  jobPost.proposal.push(proposal);
+  res.status(202).send(jobPost);
+});
 
 app.post("/api/v1/wallet/mint", async (req : any, res) => {
   const firefly = req.firefly;
@@ -137,7 +193,14 @@ app.post("/api/v1/wallet/transfer", async (req : any, res) => {
 
 app.post("/api/v1/contracts", async (req : any, res) => {
   const firefly = req.firefly;
-  const cid = uuidv4();
+  // check if the request has a contract, amount, and freelancer address
+  if (!req.body.contract || req.body.amount === undefined && req.body.amount >= 0 || !req.body.freelancer) {
+    return res.status(400).send({ error: 'Missing contract, amount, or freelancer address' });
+  }
+  
+  const contractContent = req.body.contract;
+  const hash = crypto.createHash('sha256').update(contractContent).digest('hex');
+  contractDatabase.set(hash, contractContent);
   try {
     // authorize the escrow contract to spend the client's funds, with new allowance
     await firefly.invokeContractAPI(coinApiName, "approve", {
@@ -152,13 +215,14 @@ app.post("/api/v1/contracts", async (req : any, res) => {
       input: {
         _freelancer: req.body.freelancer,
         _amount: req.body.amount,
-        _cid: cid,
+        _cid: hash,
       },
     });
     res.status(202).send({
-      cid: cid,
+      cid: hash,
     });
   } catch (e: any) {
+    // console.log(e)
     res.status(500).send({
       error: e.message,
     });
@@ -167,13 +231,23 @@ app.post("/api/v1/contracts", async (req : any, res) => {
 
 app.get("/api/v1/contracts/:cid", async (req : any, res) => {
   const firefly = req.firefly;
+  const hash = req.params.cid;
+  const contractContent = contractDatabase.get(hash);
+  if (!contractContent) {
+    return res.status(404).send({ error: 'Contract not found' });
+  }
   try {
     const fireflyRes = await firefly.queryContractAPI(escrowApiName, "getAgreement", {
       input: {
         _cid: req.params.cid,
       },
     });
-    res.status(202).send(fireflyRes);
+    // combine the contract content with the agreement data
+    const agreementData = {
+      contract: contractContent,
+      agreement: fireflyRes.output,
+    };
+    res.status(202).send(agreementData);
   } catch (e: any) {
     res.status(500).send({
       error: e.message,
@@ -183,7 +257,6 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
 
 app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
   const firefly = req.firefly;
-  // console.log(req)
   try {
     const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "approve", {
       input: {
@@ -192,7 +265,6 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
-    // console.log(e);
     res.status(500).send({
       error: e.message,
     });
@@ -201,7 +273,6 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
 
 app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
   const firefly = req.firefly;
-  // console.log(req)
   try {
     await firefly.invokeContractAPI(escrowApiName, "releaseFunds", {
       input: {
@@ -211,7 +282,6 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
     });
     res.status(202).send();
   } catch (e: any) {
-    // console.log(e);
     res.status(500).send({
       error: e.message,
     });
