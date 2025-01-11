@@ -8,11 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { DialogFooter } from "@/components/ui/dialog"
 import Cookies from "js-cookie"
 
 export default function ContractDetailPage() {
@@ -20,10 +20,10 @@ export default function ContractDetailPage() {
   const contractId = params.id;
 
   const contracts = [
-    { hash: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: {address: "0x0000000000000000000000000000000000000000", username: "client"}, handshake: false, freelancer: {address: "0x0000000000000000000000000000000000000000", username: "freelancer"}   } },
+    { id: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: {address: "0x0000000000000000000000000000000000000000", username: "client"}, handshake: false, freelancer: {address: "0x0000000000000000000000000000000000000000", username: "freelancer"}   } },
   ];
 
-  const contract = contracts.find((contract) => contract.hash === contractId);
+  const contract = contracts.find((contract) => contract.id === contractId);
 
   const loggedInUser = Cookies.get("username");
 
@@ -39,7 +39,7 @@ export default function ContractDetailPage() {
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold mb-2">Contract Details</h1>
-      <p>Contract ID: {contract.hash}</p>
+      <p>Contract ID: {contract.id}</p>
       <p>Contract Content: {contract.contract}</p>
       <p>Amount in Escrow: {contract.agreement.amount}</p>
       <p>Client Address: {contract.agreement.client.address}</p>

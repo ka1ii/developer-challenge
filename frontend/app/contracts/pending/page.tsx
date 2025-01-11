@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 export default function PendingPage() {
     // only contracts that awaits to be handshaked by the freelancer and the client is the current user
   const contracts = [
-      { hash: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: false, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } }
+      { id: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: false, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } }
   ];
 
   return (
@@ -21,7 +21,7 @@ export default function PendingPage() {
       <h1 className="text-xl font-bold">My Contracts</h1>
       <div className="flex flex-row gap-4">
         {contracts.map(contract => (
-          <a className="block" key={contract.hash}> 
+          <a className="block" key={contract.id}> 
             <Card>
               <CardHeader>
                 <CardTitle>{contract.title}</CardTitle>

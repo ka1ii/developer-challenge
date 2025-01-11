@@ -14,8 +14,8 @@ export default function ContractsPage() {
     const router = useRouter();
     //TODO: when getting contracts, only display ones that are handshaked by the freelancer
   const contracts = [
-      { hash: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: false, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } },
-      { hash: '2', title: "Sample contract 2", contract: "Sample contract content 2", agreement: { amount: 200, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: true, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } },
+      { id: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: false, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } },
+      { id: '2', title: "Sample contract 2", contract: "Sample contract content 2", agreement: { amount: 200, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: true, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } },
   ];
 
   return (
@@ -23,9 +23,9 @@ export default function ContractsPage() {
       <h1 className="text-xl font-bold">My Contracts</h1>
       <div className="flex flex-row gap-4">
         {contracts.map(contract => (
-          <a className="block" key={contract.hash}> 
+          <a className="block" key={contract.id}> 
             <Card onClick={() => {
-              router.push(`/contracts/${contract.hash}`);
+              router.push(`/contracts/${contract.id}`);
             }}>
               <CardHeader>
                 <CardTitle>{contract.title}</CardTitle>
