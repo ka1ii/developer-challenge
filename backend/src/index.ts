@@ -64,15 +64,12 @@ app.use((req: any, res, next) => {
   switch (username) {
     case 'admin':
       req.firefly = firefly_admin;
-      req.address = config.HOST1_ADMIN_ADDRESS;
       break;
     case 'freelancer':
       req.firefly = firefly_freelancer;
-      req.address = config.HOST2_FREELANCER_ADDRESS;
       break;
     case 'client':
       req.firefly = firefly_client;
-      req.address = config.HOST3_CLIENT_ADDRESS;
       break;
     default:
       return res.status(400).send({ error: 'Invalid username' });
@@ -176,10 +173,19 @@ app.get("/api/v1/wallet/balance", async (req : any, res) => {
 
 app.post("/api/v1/wallet/transfer", async (req : any, res) => {
   const firefly = req.firefly;
+  let address;
+  const payee = req.headers['payee'];
+  if (payee === 'admin') {
+    address = config.HOST1_ADMIN_ADDRESS;
+  } else if (payee === 'freelancer') {
+    address = config.HOST2_FREELANCER_ADDRESS;
+  } else if (payee === 'client') {
+    address = config.HOST3_CLIENT_ADDRESS;
+  }
   try {
     await firefly.invokeContractAPI(coinApiName, "transfer", {
       input: {
-        to: req.body.address,
+        to: address,
         amount: req.body.amount,
       },
     });

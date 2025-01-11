@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 describe("API Endpoints", function () {
 
   const freelancerAddress = config.HOST2_FREELANCER_ADDRESS;
-  const randomAddress = config.HOST1_ADMIN_ADDRESS;
 
   //
   // --- 1) Testing /api/v1/wallet/mint (POST) ---
@@ -101,7 +100,7 @@ describe("API Endpoints", function () {
         .post("/api/v1/wallet/transfer")
         .set("username", "admin")
         .send({
-          address: freelancerAddress,
+          payee: "freelancer",
           amount: 10
         });
       expect(res.status).to.equal(202);
@@ -113,7 +112,7 @@ describe("API Endpoints", function () {
         .post("/api/v1/wallet/transfer")
         .set("username", "admin")
         .send({
-          address: freelancerAddress,
+          payee: "freelancer",
           amount: 9999999999
         });
       expect(res.status).to.equal(500);
