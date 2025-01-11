@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -13,8 +12,8 @@ import { useRouter } from "next/navigation";
 export default function JobsPage() {
   const router = useRouter();
   const jobs = [
-    { id: 1, title: "Software Engineer", description: "Develop and maintain softwasdfsodifns.", budget: "$100,000 - $120,000" },
-    { id: 2, title: "Product Manager", description: "Oversee product development from start to finish.", budget: "$80,000 - $100,000" },
+    { id: '1', title: "Software Engineer", description: "Develop and maintain softwasdfsodifns.", budget: "$100,000 - $120,000" },
+    { id: '2', title: "Product Manager", description: "Oversee product development from start to finish.", budget: "$80,000 - $100,000" },
   ];
 
   return (
@@ -22,7 +21,7 @@ export default function JobsPage() {
       <h1 className="text-xl font-bold">Available Jobs</h1>
       <div className="flex flex-row gap-4">
         {jobs.map(job => (
-          <a className="block"> 
+          <a className="block" key={job.id}> 
             <Card onClick={() => {
               router.push(`/jobs/${job.id}`);
             }}>

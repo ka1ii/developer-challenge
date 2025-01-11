@@ -3,12 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,19 +21,26 @@ const formSchema = z.object({
     title: z.string().min(2, {
         message: "Title must be at least 2 characters.",
     }),
-    description: z.string().min(2, {
-        message: "Description must be at least 2 characters.",
+    contract: z.string().min(2, {
+        message: "Contract must be at least 2 characters.",
     }),
-    budget: z.number().min(1, {
-        message: "Budget must be at least 1.",
+    amount: z.number().min(0, {
+        message: "Amount must be at least 0.",
+    }),
+    // only clients can create contracts for now
+    freelancer: z.string().min(2, {
+        message: "Freelancer must be at least 2 characters.",
     }),
 })
 
-export default function NewJobForm() {
+export default function NewContractForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema)
   })
+    
+  const searchParams = useSearchParams();
+  const proposalId = searchParams.get("proposalId");
  
   function onSubmit(values: z.infer<typeof formSchema>) {
 
@@ -48,9 +55,9 @@ export default function NewJobForm() {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Title</FormLabel>
+              <FormLabel>Contract Title</FormLabel>
               <FormControl>
-                <Input placeholder="Job Title" {...field} />
+                <Input placeholder="Contract Title" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -58,12 +65,25 @@ export default function NewJobForm() {
               />
         <FormField
           control={form.control}
-          name="budget"
+          name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Budget</FormLabel>
+              <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input placeholder="Job Budget" {...field} />
+                <Input placeholder="Amount" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+              />
+        <FormField
+          control={form.control}
+          name="freelancer"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Freelancer</FormLabel>
+              <FormControl>
+                <Input placeholder="Freelancer" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -71,26 +91,23 @@ export default function NewJobForm() {
         />
         <FormField
           control={form.control}
-          name="description"
+          name="contract"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Contract</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Job Description"
+                  placeholder="Contract"
                   className="resize-none"
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                Describe the job in detail.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <Button type="submit">Post Job</Button>
+        <Button type="submit">Create Contract</Button>
       </form>
     </Form>
   )

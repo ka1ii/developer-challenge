@@ -46,25 +46,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {
             title: "Post a Job",
             url: "/jobs/new",
-          },
+          }
         ],
       },
       {
         title: "Contracts",
-        url: "#",
+        url: "/contracts",
         icon: File,
         items: [
           {
             title: "Approve",
-            url: "#",
+            url: "/contracts/approve",
           },
           {
             title: "New",
-            url: "#",
+            url: "/contracts/new",
           },
           {
             title: "Pending",
-            url: "#",
+            url: "/contracts/pending",
           },
         ],
       },

@@ -17,8 +17,8 @@ import {
 import { Input } from "@/components/ui/input"
 
 const formSchema = z.object({
-    address: z.string().min(2, {
-        message: "Address must be at least 2 characters.",
+    payee: z.string().min(2, {
+        message: "Payee must be at least 2 characters.",
     }),
     amount: z.number().min(1, {
         message: "Amount must be at least 1.",
@@ -28,11 +28,7 @@ const formSchema = z.object({
 export default function ProfileForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      address: "0x0000000000000000000000000000000000000000",
-      amount: 0,
-    },
+    resolver: zodResolver(formSchema)
   })
  
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -43,18 +39,20 @@ export default function ProfileForm() {
     const [balance, setBalance] = React.useState(1000);
 
     return (
+        <div>
       <div style={{ textAlign: 'center', marginTop: '50px' }}>
             <h1>{balance} Coin</h1>
+        </div>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="address"
+          name="payee"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>Payee</FormLabel>
               <FormControl>
-                <Input placeholder="Job Title" {...field} />
+                <Input placeholder="User you are paying to" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -67,7 +65,7 @@ export default function ProfileForm() {
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input placeholder="Job Budget" {...field} />
+                <Input placeholder="Amount" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,6 +75,6 @@ export default function ProfileForm() {
         <Button type="submit">Transfer</Button>
       </form>
             </Form>
-      </div>
+        </div>
   )
 }
