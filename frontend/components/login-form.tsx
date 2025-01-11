@@ -15,7 +15,7 @@ export function LoginForm({
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     document.cookie = `username=${username}; path=/;`;
-    router.push("/dashboard");
+    router.push("/jobs");
   }
   const router = useRouter();
   return (

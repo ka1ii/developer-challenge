@@ -45,22 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Post a Job",
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: "Wallet",
-        url: "#",
-        icon: Wallet,
-        items: [
-          {
-            title: "Balance",
-            url: "#",
-          },
-          {
-            title: "Transfer",
-            url: "#",
+            url: "/jobs/new",
           },
         ],
       },
@@ -82,6 +67,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "#",
           },
         ],
+      },
+      {
+        title: "Wallet",
+        url: "/wallet",
+        icon: Wallet
       },
     ],
   }
