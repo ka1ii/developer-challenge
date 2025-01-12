@@ -62,12 +62,65 @@ type Contract = {
   };
 }
 
-// mock job post database using a map data structure 
-const jobPostDatabase = new Map<string, JobPost>();
+// mock job post database for job posts using a map data structure
+// this should be stored as a table in a relational database
+// access patterns can become quite complex therefore not applicable with a noSQL database
+const jobPostDatabase = new Map<string, JobPost>([
+  [
+    "job1",
+    {
+      id: "job1",
+      title: "Website Development",
+      description: "Looking for a skilled developer to create a responsive e-commerce website.",
+      budget: 5000,
+      owner: "adam_admin",
+      proposal: ["proposal1", "proposal2"],
+    },
+  ],
+  [
+    "job2",
+    {
+      id: "job2",
+      title: "Graphic Design for Marketing Materials",
+      description: "Need creative designs for flyers, brochures, and social media posts.",
+      budget: 1500,
+      owner: "calvin_client",
+      proposal: ["proposal3"],
+    },
+  ],
+]);
 
-// mock proposal database using a map data structure
-const proposalDatabase = new Map<string, Proposal>();
-
+// mock proposal database for job posts using a map data structure
+// this should be stored as a table in a relational database
+const proposalDatabase = new Map<string, Proposal>([
+  [
+    "proposal1",
+    {
+      id: "proposal1",
+      freelancer: "frank_freelancer",
+      coverletter: "I have over 5 years of experience in web development and can deliver a high-quality e-commerce site.",
+      amount: 4800,
+    },
+  ],
+  [
+    "proposal2",
+    {
+      id: "proposal2",
+      freelancer: "adam_admin",
+      coverletter: "I can provide a unique design perspective for your website project.",
+      amount: 4500,
+    },
+  ],
+  [
+    "proposal3",
+    {
+      id: "proposal3",
+      freelancer: "frank_freelancer",
+      coverletter: "I specialize in graphic design and can create eye-catching marketing materials.",
+      amount: 1400,
+    },
+  ],
+]);
 // mock ipfs database for contracts using a map data structure
 // the key is a hash of the contract data
 const contractDatabase = new Map<string, Contract>();
