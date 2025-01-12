@@ -10,7 +10,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 
-import "./globals.css" // or your global styles
+import "./globals.css" 
 import { usePathname } from "next/navigation"
 
 export default function RootLayout({
@@ -39,7 +39,6 @@ export default function RootLayout({
               <div className="flex items-center gap-2 px-4">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />
-                {/* Example Breadcrumb, or any other header content */}
                 <Breadcrumb>
                   <BreadcrumbList>
                     <BreadcrumbItem className="hidden md:block">
@@ -56,7 +55,6 @@ export default function RootLayout({
               </div>
             </header>
 
-            {/* The actual page content goes here */}
             <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
               {children}
             </main>

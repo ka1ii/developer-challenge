@@ -43,7 +43,7 @@ export function LoginForm({
               <Input
                 id="username"
                 type="text"
-                placeholder="client | freelancer | admin"
+                placeholder="calvin_client | frank_freelancer | adam_admin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)} // Update state on input change
                 required

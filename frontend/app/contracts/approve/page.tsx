@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
@@ -10,33 +10,43 @@ import {
 } from "@/components/ui/card"
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import useContracts from "@/hooks/useContracts";
+import Cookies from "js-cookie";
+import useApproveContract from "@/hooks/useApproveContract";
+import Contract from "@/types/contract";
 
 export default function ApprovePage() {
-  const router = useRouter();
-    // only contracts that needs to be handshaked by the freelancer, where the freelancer is the current user
-  const contracts = [
-      { id: '1', title: "Sample contract", contract: "Sample contract content", agreement: { amount: 100, client: { address: "0x0000000000000000000000000000000000000000", username: "client" }, handshake: false, freelancer: { address: "0x0000000000000000000000000000000000000000", username: "freelancer" } } }
-  ];
 
-  const approveContract = async (contract: any) => {
-    console.log(contract);
+  const loggedInUser = Cookies.get("username") || "";
+
+  const router = useRouter();
+  const { contracts } = useContracts(loggedInUser);
+
+  const { _approveContract } = useApproveContract(loggedInUser);
+
+  const approveContract = async (contract: Contract) => {
+    await _approveContract(contract.cid);
+    // refresh the page
+    router.refresh();
   }
 
   return (
     <>
       <h1 className="text-xl font-bold">My Contracts</h1>
       <div className="flex flex-row gap-4">
-        {contracts.map(contract => (
-          <a className="block" key={contract.id}> 
+        {contracts.filter(contract => (contract.freelancer.username === loggedInUser && contract.handshake === false)).map(contract => (
+          <a className="block" key={contract.cid}> 
             <Card>
               <CardHeader>
                 <CardTitle>{contract.title}</CardTitle>
                 <CardDescription>{contract.contract}</CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Amount in Escrow: {contract.agreement.amount}</p>
-                <p>Client address: {contract.agreement.client.address}</p>
-                <p>Handshake: {contract.agreement.handshake ? "Yes" : "No"}</p>
+                <p>Contract ID: {contract.cid}</p>
+                <p>Amount in Escrow: {contract.amount}</p>
+                <p>Client: {contract.client.username}</p>
+                <p>Client address: {contract.client.address}</p>
+                <p>Handshake: {contract.handshake ? "Yes" : "No"}</p>
               </CardContent>
               <CardFooter>
                 <Button onClick={() => {

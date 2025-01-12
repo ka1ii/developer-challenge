@@ -1,20 +1,21 @@
 "use client"
-import React, { useState } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card"
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import useJobs from "@/hooks/useJobs";
 
 export default function JobsPage() {
   const router = useRouter();
-  const jobs = [
-    { id: '1', title: "Software Engineer", description: "Develop and maintain softwasdfsodifns.", budget: "$100,000 - $120,000" },
-    { id: '2', title: "Product Manager", description: "Oversee product development from start to finish.", budget: "$80,000 - $100,000" },
-  ];
+  const username = Cookies.get('username') || '';
+  const { jobs } = useJobs(username);
 
   return (
     <>
@@ -32,6 +33,9 @@ export default function JobsPage() {
               <CardContent>
                 <p>Budget: {job.budget}</p>
               </CardContent>
+              <CardFooter>
+                <p>Client: {job.owner}</p>
+              </CardFooter>
             </Card>
           </a>
         ))}
