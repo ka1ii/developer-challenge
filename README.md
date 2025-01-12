@@ -28,4 +28,4 @@ This repo has three directories in it:
 You will need to first deploy the example smart contracts with Hardhat to FireFly. Once the backend/frontend are started, the frontend will interact with the blockchain.
 
 ![Backend](backend.png)
-![Frontend](frontend.png)
+[![Frontend](frontend.png)](https://github.com/ka1ii/developer-challenge/blob/master/frontend.png)
