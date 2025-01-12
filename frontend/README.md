@@ -1,10 +1,23 @@
-# Frontend: Kaleido Developer Challenge
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-This is a basic React UI that allows you to set/get a value and mint a token using the [solidty smart contracts](../solidity/contracts/)
+## Prerequisites
 
-## Run
+Use Node version > 16
+
+npm install
+
+## Getting Started
+
+First, run the development server:
 
 ```bash
-npm install
-npm start
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

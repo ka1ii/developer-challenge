@@ -1,17 +1,18 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const SimpleStorage = await ethers.getContractFactory("SimpleStorage");
-  const simpleStorage = await SimpleStorage.deploy();
-  await simpleStorage.deployed();
 
-  const Token = await ethers.getContractFactory("Token");
-  const token = await Token.deploy();
-  await token.deployed();
+  const Coin = await ethers.getContractFactory("Coin");
+  const coin = await Coin.deploy(1000);
+  await coin.deployed();
+
+  const Escrow = await ethers.getContractFactory("Escrow");
+  const escrow = await Escrow.deploy(coin.address);
+  await escrow.deployed();
 
   console.log("Contracts deployed!\nAdd the addresses to backend/index.ts:");
-  console.log(`SIMPLE_STORAGE_ADDRESS: ${simpleStorage.address}`);
-  console.log(`TOKEN_ADDRESS: ${token.address}`);
+  console.log(`COIN_ADDRESS: ${coin.address}`);
+  console.log(`ESCROW_ADDRESS: ${escrow.address}`);
 }
 
 main()
