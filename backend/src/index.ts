@@ -45,30 +45,46 @@ type JobPost = {
   description: string;
   budget: number;
   owner: string;
-  proposal: Proposal[];
+  proposal: string[];
+}
+
+type Contract = {
+  title: string;
+  contract: string;
+  client: {
+    address: string;
+    username: string;
+  };
+  freelancer: {
+    address: string;
+    username: string;
+  };
 }
 
 // mock job post database using a map data structure 
 const jobPostDatabase = new Map<string, JobPost>();
 
-app.use(bodyparser.json());
+// mock proposal database using a map data structure
+const proposalDatabase = new Map<string, Proposal>();
 
 // mock ipfs database for contracts using a map data structure
 // the key is a hash of the contract data
-const contractDatabase = new Map<string, string>();
+const contractDatabase = new Map<string, Contract>();
+
+app.use(bodyparser.json());
 
 // Middleware to attach FireFly instance based on username
 app.use((req: any, res, next) => {
   const username = req.headers['username'];
 
   switch (username) {
-    case 'admin':
+    case 'adam_admin':
       req.firefly = firefly_admin;
       break;
-    case 'freelancer':
+    case 'frank_freelancer':
       req.firefly = firefly_freelancer;
       break;
-    case 'client':
+    case 'calvin_client':
       req.firefly = firefly_client;
       break;
     default:
@@ -79,15 +95,12 @@ app.use((req: any, res, next) => {
 });
 
 app.get("/api/v1/jobs", async (req: any, res) => {
-  const username = req.headers['username'];
   const jobs = Array.from(jobPostDatabase.values()).map(job => {
-    if (job.owner === username) {
-      return job; // Include proposals for the owner
-    } else {
-      // Exclude proposals for others
-      const { proposal, ...jobWithoutProposals } = job;
-      return jobWithoutProposals;
-    }
+
+    // exclude proposals 
+    const { proposal, ...jobWithoutProposals } = job;
+    return jobWithoutProposals;
+    
   });
   res.status(202).send(jobs);
 });
@@ -107,6 +120,9 @@ app.post("/api/v1/jobs", async (req: any, res) => {
 });
 
 app.get("/api/v1/jobs/:id", async (req: any, res) => {
+  if (!req.params.id || !req.headers['username']) {
+    return res.status(400).send({ error: 'Missing job post id or username' });
+  }
   const jobPost = jobPostDatabase.get(req.params.id);
   if (!jobPost) {
     return res.status(404).send({ error: 'Job post not found' });
@@ -115,10 +131,26 @@ app.get("/api/v1/jobs/:id", async (req: any, res) => {
     const { proposal, ...jobWithoutProposals } = jobPost;
     return res.status(202).send(jobWithoutProposals);
   }
-  res.status(202).send(jobPost);
+  // if the job post is owned by the user, return the full job post
+  // retrieve all proposals for the job post
+  // loop through every proposal id in the proposal array and retrieve the proposal
+  const proposals = [];
+  for (const proposalId of jobPost.proposal) {
+    const proposal = proposalDatabase.get(proposalId);
+    if (proposal) {
+      proposals.push(proposal);
+    }
+  }
+  res.status(202).send({
+    ...jobPost,
+    proposals: proposals,
+  });
 });
 
 app.post("/api/v1/jobs/:id/proposals", async (req: any, res) => {
+  if (!req.params.id || !req.headers['username'] || !req.body.coverletter || !req.body.amount) {
+    return res.status(400).send({ error: 'Missing job post id, username, coverletter, or amount' });
+  }
   const username = req.headers['username'];
   const jobPost = jobPostDatabase.get(req.params.id);
   if (!jobPost) {
@@ -130,8 +162,17 @@ app.post("/api/v1/jobs/:id/proposals", async (req: any, res) => {
     coverletter: req.body.coverletter,
     amount: req.body.amount,
   }
-  jobPost.proposal.push(proposal);
-  res.status(202).send(jobPost);
+  proposalDatabase.set(proposal.id, proposal);
+  jobPost.proposal.push(proposal.id);
+  res.status(202).send(proposal);
+});
+
+app.get("/api/v1/jobs/:id/proposals/:proposalId", async (req: any, res) => {
+  const proposal = proposalDatabase.get(req.params.proposalId);
+  if (!proposal) {
+    return res.status(404).send({ error: 'Proposal not found' });
+  }
+  res.status(202).send(proposal);
 });
 
 app.post("/api/v1/wallet/mint", async (req : any, res) => {
@@ -174,12 +215,12 @@ app.get("/api/v1/wallet/balance", async (req : any, res) => {
 app.post("/api/v1/wallet/transfer", async (req : any, res) => {
   const firefly = req.firefly;
   let address;
-  const payee = req.headers['payee'];
-  if (payee === 'admin') {
+  const payee = req.body.payee;
+  if (payee === 'tom_admin') {
     address = config.HOST1_ADMIN_ADDRESS;
-  } else if (payee === 'freelancer') {
+  } else if (payee === 'frank_freelancer') {
     address = config.HOST2_FREELANCER_ADDRESS;
-  } else if (payee === 'client') {
+  } else if (payee === 'calvin_client') {
     address = config.HOST3_CLIENT_ADDRESS;
   }
   try {
@@ -200,13 +241,40 @@ app.post("/api/v1/wallet/transfer", async (req : any, res) => {
 app.post("/api/v1/contracts", async (req : any, res) => {
   const firefly = req.firefly;
   // check if the request has a contract, amount, and freelancer address
-  if (!req.body.contract || req.body.amount === undefined && req.body.amount >= 0 || !req.body.freelancer) {
-    return res.status(400).send({ error: 'Missing contract, amount, or freelancer address' });
+  if (!req.body.title || !req.headers['username'] || !req.body.contract || req.body.amount === undefined && req.body.amount >= 0 || !req.body.freelancer) {
+    return res.status(400).send({ error: 'Missing title, username,contract, amount, or freelancer address' });
   }
-  
+
+  // we are using the hash of the contract content as the cid, it is imperative that the contract content is unique.
+  // the contract will return error if the cid already exists
   const contractContent = req.body.contract;
   const hash = crypto.createHash('sha256').update(contractContent).digest('hex');
-  contractDatabase.set(hash, contractContent);
+
+  // this is messy 
+  // the username 'calvin_client' represents an off-chain identity (again, its a username) that only exists within this database
+  // however, this 'client' identity can also act as a freelancer in a contract.
+  let freelancerAddress;
+  let clientAddress;
+  if (req.headers['username'] === 'adam_admin') {
+    clientAddress = config.HOST1_ADMIN_ADDRESS;
+  } else if (req.headers['username'] === 'frank_freelancer') {
+    clientAddress = config.HOST2_FREELANCER_ADDRESS;
+  } else if (req.headers['username'] === 'calvin_client') {
+    clientAddress = config.HOST3_CLIENT_ADDRESS;
+  } else {
+    return res.status(400).send({ error: 'Invalid username' });
+  }
+
+  if (req.body.freelancer === 'adam_admin') {
+    freelancerAddress = config.HOST1_ADMIN_ADDRESS;
+  } else if (req.body.freelancer === 'frank_freelancer') {
+    freelancerAddress = config.HOST2_FREELANCER_ADDRESS;
+  } else if (req.body.freelancer === 'calvin_client') {
+    freelancerAddress = config.HOST3_CLIENT_ADDRESS;
+  } else {
+    return res.status(400).send({ error: 'Invalid freelancer' });
+  }
+
   try {
     // authorize the escrow contract to spend the client's funds, with new allowance
     await firefly.invokeContractAPI(coinApiName, "approve", {
@@ -217,15 +285,32 @@ app.post("/api/v1/contracts", async (req : any, res) => {
       }
     });
 
-    const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "createAgreement", {
+    await firefly.invokeContractAPI(escrowApiName, "createAgreement", {
       input: {
-        _freelancer: req.body.freelancer,
+        _freelancer: freelancerAddress,
         _amount: req.body.amount,
         _cid: hash,
       },
     });
+    // add the contract to the contract database
+    const newContract = {
+      title: req.body.title,
+      contract: req.body.contract,
+      client: {
+        address: clientAddress,
+        username: req.headers['username'],
+      },
+      freelancer: {
+        address: freelancerAddress,
+        username: req.body.freelancer,
+      }
+    }
+    contractDatabase.set(hash, newContract);
     res.status(202).send({
       cid: hash,
+      amount: req.body.amount,
+      ...newContract,
+      handshake: false
     });
   } catch (e: any) {
     // console.log(e)
@@ -250,8 +335,10 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
     });
     // combine the contract content with the agreement data
     const agreementData = {
-      contract: contractContent,
-      agreement: fireflyRes.output,
+      cid: hash,
+      ...contractContent,
+      amount : fireflyRes.output.amount,
+      handshake: fireflyRes.output.handshake,
     };
     res.status(202).send(agreementData);
   } catch (e: any) {
@@ -264,7 +351,7 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
 app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
   const firefly = req.firefly;
   try {
-    const fireflyRes = await firefly.invokeContractAPI(escrowApiName, "approve", {
+    await firefly.invokeContractAPI(escrowApiName, "approve", {
       input: {
         _cid: req.params.cid,
       },
@@ -279,6 +366,13 @@ app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
 
 app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
   const firefly = req.firefly;
+  if (req.body.amount === undefined || req.body.amount < 0) {
+    return res.status(400).send({ error: 'Missing amount' });
+  }
+  // if the user isn't the contract client, they cannot release funds
+  if (req.headers['username'] !== contractDatabase.get(req.params.cid)?.client.username) {
+    return res.status(400).send({ error: 'You are not the contract client' });
+  }
   try {
     await firefly.invokeContractAPI(escrowApiName, "releaseFunds", {
       input: {
@@ -296,24 +390,14 @@ app.post("/api/v1/contracts/:cid/releaseFunds", async (req: any, res) => {
 
 app.post("/api/v1/contracts/:cid/addFunds", async (req: any, res) => {
   const firefly = req.firefly;
+  if (req.body.amount === undefined || req.body.amount < 0) {
+    return res.status(400).send({ error: 'Missing amount' });
+  }
+  // if the user isn't the contract client, they cannot add funds
+  if (req.headers['username'] !== contractDatabase.get(req.params.cid)?.client.username) {
+    return res.status(400).send({ error: 'You are not the contract client' });
+  }
   try {
-    // Retrieve the current allowance
-    const currentAllowance = await firefly.queryContractAPI(coinApiName, "allowance", {
-      input: {
-        owner: req.address,
-        spender: config.ESCROW_ADDRESS,
-      }
-    });
-    // Calculate the new allowance
-    const newAllowance = Number(currentAllowance) + Number(req.body.amount);
-    // authorize the escrow contract to spend the client's funds, with new allowance
-    await firefly.invokeContractAPI(coinApiName, "approve", {
-      input: {
-        spender: config.ESCROW_ADDRESS,
-        amount: newAllowance,
-      }
-    });
-
     await firefly.invokeContractAPI(escrowApiName, "addFunds", {
       input: {
         _cid: req.params.cid,
