@@ -1,11 +1,12 @@
-# Backend: Kaleido Developer Challenge
+# Backend
 
-A very simple TypeScript Node.js app that uses the FireFly SDK to interact with the [example solidty smart contracts](../solidity/contracts/).
+## Prerequisite
+
+To deploy the backend, make sure there are three firefly supernodes running and solidity contracts are deployed on the created chain.
 
 ## Configuration
 
-To deploy the backend, make sure there are three firefly supernodes running and solidity contracts are deployed on the created chain.
-Once deployed, populate these values in your config.json
+Populate these values in your config.json
 
 "COIN_ADDRESS": ,
 "ESCROW_ADDRESS": ,

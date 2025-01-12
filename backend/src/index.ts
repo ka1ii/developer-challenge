@@ -50,6 +50,7 @@ type JobPost = {
 }
 
 type Contract = {
+  cid: string;
   title: string;
   contract: string;
   client: {
@@ -72,7 +73,7 @@ const jobPostDatabase = new Map<string, JobPost>([
       id: "job1",
       title: "Website Development",
       description: "Looking for a skilled developer to create a responsive e-commerce website.",
-      budget: 5000,
+      budget: 50,
       owner: "adam_admin",
       proposal: ["proposal1", "proposal2"],
     },
@@ -83,7 +84,7 @@ const jobPostDatabase = new Map<string, JobPost>([
       id: "job2",
       title: "Graphic Design for Marketing Materials",
       description: "Need creative designs for flyers, brochures, and social media posts.",
-      budget: 1500,
+      budget: 15,
       owner: "calvin_client",
       proposal: ["proposal3"],
     },
@@ -99,7 +100,7 @@ const proposalDatabase = new Map<string, Proposal>([
       id: "proposal1",
       freelancer: "frank_freelancer",
       coverletter: "I have over 5 years of experience in web development and can deliver a high-quality e-commerce site.",
-      amount: 4800,
+      amount: 48,
     },
   ],
   [
@@ -108,16 +109,16 @@ const proposalDatabase = new Map<string, Proposal>([
       id: "proposal2",
       freelancer: "adam_admin",
       coverletter: "I can provide a unique design perspective for your website project.",
-      amount: 4500,
+      amount: 45,
     },
   ],
   [
     "proposal3",
     {
       id: "proposal3",
-      freelancer: "frank_freelancer",
+      freelancer: "adam_admin",
       coverletter: "I specialize in graphic design and can create eye-catching marketing materials.",
-      amount: 1400,
+      amount: 100,
     },
   ],
 ]);
@@ -350,6 +351,7 @@ app.post("/api/v1/contracts", async (req : any, res) => {
     });
     // add the contract to the contract database
     const newContract = {
+      cid: hash,
       title: req.body.title,
       contract: req.body.contract,
       client: {
@@ -363,26 +365,44 @@ app.post("/api/v1/contracts", async (req : any, res) => {
     }
     contractDatabase.set(hash, newContract);
     res.status(202).send({
-      cid: hash,
       amount: req.body.amount,
       ...newContract,
       handshake: false
     });
   } catch (e: any) {
-    // console.log(e)
+    console.log(e)
     res.status(500).send({
       error: e.message,
     });
   }
 });
 
-app.get("/api/v1/contracts", async (req : any, res) => {
+app.get("/api/v1/contracts", async (req: any, res) => {
+  const firefly = req.firefly;
   if (!req.headers['username']) {
     return res.status(400).send({ error: 'Missing username' });
   }
   const username = req.headers['username'];
   const contracts = Array.from(contractDatabase.values()).filter(contract => contract.client.username === username || contract.freelancer.username === username);
-  res.status(202).send(contracts);
+  // for each contract, get the agreement data
+  const agreements = [];
+  for (const contract of contracts) {
+    try {
+      const fireflyRes = await firefly.queryContractAPI(escrowApiName, "getAgreement", {
+        input: {
+          _cid: contract.cid,
+        },
+      });
+      agreements.push({
+        ...contract,
+        amount: fireflyRes.output.amount,
+        handshake: fireflyRes.output.handshake,
+      });
+    } catch (e: any) {
+      console.error(e);
+    }
+  }
+  res.status(202).send(agreements);
 });
 
 app.get("/api/v1/contracts/:cid", async (req : any, res) => {
@@ -400,7 +420,6 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
     });
     // combine the contract content with the agreement data
     const agreementData = {
-      cid: hash,
       ...contractContent,
       amount : fireflyRes.output.amount,
       handshake: fireflyRes.output.handshake,
@@ -413,8 +432,20 @@ app.get("/api/v1/contracts/:cid", async (req : any, res) => {
   }
 });
 
-app.post("/api/v1/contracts/:cid/sign", async (req : any, res) => {
+app.post("/api/v1/contracts/:cid/approve", async (req : any, res) => {
   const firefly = req.firefly;
+  if (!req.headers['username'] || !req.params.cid) {
+    return res.status(400).send({ error: 'Missing username or cid' });
+  }
+  // check if the contract exists
+  const contract = contractDatabase.get(req.params.cid);
+  if (!contract) {
+    return res.status(400).send({ error: 'Contract not found' });
+  }
+  const username = req.headers['username'];
+  if (username !== contract.freelancer.username) {
+    return res.status(400).send({ error: 'You are not the contract freelancer' });
+  }
   try {
     await firefly.invokeContractAPI(escrowApiName, "approve", {
       input: {

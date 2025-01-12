@@ -10,6 +10,24 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe("API Endpoints", function () {
 
+  // for some reason the first three POST transactions to the blockchain (upon deploying a new contract) will stuck in pending forever, so we will call them here
+  describe("POST /api/v1/wallet/mint", function () {
+    it("should mint token unsuccessfully the first three times upon deploying a new contract", async function () {
+       await request(app)
+        .post("/api/v1/wallet/mint")
+        .set("username", "adam_admin")
+        .send({ amount: 100 });
+      await request(app)
+        .post("/api/v1/wallet/mint")
+        .set("username", "adam_admin")
+        .send({ amount: 100 });
+      await request(app)
+        .post("/api/v1/wallet/mint")
+        .set("username", "adam_admin")
+        .send({ amount: 100 });
+    });
+  });
+
   //
   // --- 1) Testing /api/v1/wallet/mint (POST) ---
   //
@@ -208,7 +226,7 @@ describe("API Endpoints", function () {
       let createdCid = res.body.cid;
 
       res = await request(app)
-        .post(`/api/v1/contracts/${createdCid}/sign`)
+        .post(`/api/v1/contracts/${createdCid}/approve`)
         .set("username", "frank_freelancer")
         .send({});
       expect(res.status).to.equal(202);
@@ -237,10 +255,10 @@ describe("API Endpoints", function () {
       let createdCid = res.body.cid;
 
       res = await request(app)
-        .post(`/api/v1/contracts/${createdCid}/sign`)
+        .post(`/api/v1/contracts/${createdCid}/approve`)
         .set("username", "adam_admin")
         .send({});
-      expect(res.status).to.equal(500); 
+      expect(res.status).to.equal(400); 
       expect(res.body).to.have.property("error");
     });
   });
