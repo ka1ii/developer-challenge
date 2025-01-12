@@ -376,6 +376,15 @@ app.post("/api/v1/contracts", async (req : any, res) => {
   }
 });
 
+app.get("/api/v1/contracts", async (req : any, res) => {
+  if (!req.headers['username']) {
+    return res.status(400).send({ error: 'Missing username' });
+  }
+  const username = req.headers['username'];
+  const contracts = Array.from(contractDatabase.values()).filter(contract => contract.client.username === username || contract.freelancer.username === username);
+  res.status(202).send(contracts);
+});
+
 app.get("/api/v1/contracts/:cid", async (req : any, res) => {
   const firefly = req.firefly;
   const hash = req.params.cid;
