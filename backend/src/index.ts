@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 export const app = express();
+const cors = require('cors');
 
 // firefly instance that deployed the token and escrow contract
 const firefly_admin = new FireFly({
@@ -70,6 +71,8 @@ const proposalDatabase = new Map<string, Proposal>();
 // mock ipfs database for contracts using a map data structure
 // the key is a hash of the contract data
 const contractDatabase = new Map<string, Contract>();
+
+app.use(cors());
 
 app.use(bodyparser.json());
 
